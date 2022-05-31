@@ -31,62 +31,62 @@
       ```
     - content:
       ```
-      <host>:AUTHKEY=halala
-      <host>:HTTPPORT=81
+      &lt;host&gt;:AUTHKEY=halala
+      &lt;host&gt:HTTPPORT=81
       ```
-  - *<nagios path>*/etc/checkcommands.conf
+  - *&lt;nagios path&gt;*/etc/checkcommands.conf
     ```
     define command {
       command_name ibminagios
       command_line $USER1$/ibminagios.sh $HOSTADDRESS$ "$ARG1$" "$ARG2$" "$ARG3$" "$ARG4$" "$ARG5$" "$ARG6$" "$ARG7$" "$ARG8$" "$ARG9$"
     }
     ```
-  - *<nagios path>*/libexec/ibminagios.sh
+  - *&lt;nagios path&gt;*/libexec/ibminagios.sh
 - IBMi Web Service
   - apache.conf
     ```
     ScriptAlias /ibminagios /QSYS.LIB/IBMINAGIOS.LIB/IBMINAGIOS.PGM
-    <Directory /QSYS.LIB/IBMINAGIOS.LIB/>
+    &lt;Directory /QSYS.LIB/IBMINAGIOS.LIB/&gt;
       Order Deny,Allow
       Allow From 10.43.85.172
       Deny From all
       SetHandler cgi-script
       Options +ExecCGI
       SetEnv IBMI_NAGIOS_CONF_FILE /etc/ibminagios.conf
-    </Directory>
+    &lt;/Directory&gt;
     ```
 
 ## API definition
 
 - Usage
   ```
-  https://<host>:<port>/ibminagios?authkey=<authkey>&cmd=<cmd>
+  https://&lt;host&gt;:&lt;port&gt;/ibminagios?authkey=&lt;authkey&gt;&cmd=&lt;cmd&gt;
   ```
 - Commands
   - 001
     - **Required param:** -
     - **Optional param:** -
-    - **Output:** Info=|AspUsed=<x>|
+    - **Output:** Info=|AspUsed=&lt;x&gt;|
   - 002
     - **Required param:** OUTQNAME
     - **Optional param:** OUTQLIB
-    - **Output:** **Info=|NumberOfFiles=<x>|
+    - **Output:** **Info=|NumberOfFiles=&lt;x&gt;|
   - 003
     - **Required param:** -
     - **Optional param:** STATUS, JOBNAME
-    - **Output:** Info=|JobName=<x>|JobUser=<x>|JobNumber=<x>|Status=<x>|Type=<x>|SubType=<x>|ActiveJobStatus=<x>|SubsystemName=<x>|
+    - **Output:** Info=|JobName=&lt;x&gt;|JobUser=&lt;x&gt;|JobNumber=&lt;x&gt;|Status=&lt;x&gt;|Type=&lt;x&gt;|SubType=&lt;x&gt;|ActiveJobStatus=&lt;x&gt;|SubsystemName=&lt;x&gt;|
   - 004
     - **Required param:** SQL
     - **Optional param:** -
-    - **Output:** Info=|Value=<x>|
+    - **Output:** Info=|Value=&lt;x&gt;|
   - 005
     - **Required param:** -
     - **Optional param:** SBSNAME
-    - **Output:** Info=|SubsystemName=<x>|SubsystemLibraryName=<x>|Status=<x>|ActiveJobs=<x>|
+    - **Output:** Info=|SubsystemName=&lt;x&gt;|SubsystemLibraryName=&lt;x&gt;|Status=&lt;x&gt;|ActiveJobs=&lt;x&gt;|
   - 006
     - **Required param:** MSGQNAME, MINUTES
     - **Optional param:** MSGID
-    - **Output:** Info=|MessageId=<x>|Date=<x>|Time=<x>|Severity=<x>|Type=<x>|
+    - **Output:** Info=|MessageId=&lt;x&gt;|Date=&lt;x&gt;|Time=&lt;x&gt;|Severity=&lt;x&gt;|Type=&lt;x&gt;|
 
 ## Example services
 

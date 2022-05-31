@@ -63,29 +63,29 @@
   ```
 - Commands
   - 001
-    **Required param:** -
-    **Optional param:** -
-    **Output:** Info=|AspUsed=<x>|
+    - **Required param:** -
+    - **Optional param:** -
+    - **Output:** Info=|AspUsed=<x>|
   - 002
-    **Required param:** OUTQNAME
-    **Optional param:** OUTQLIB
-    **Output:** **Info=|NumberOfFiles=<x>|
+    - **Required param:** OUTQNAME
+    - **Optional param:** OUTQLIB
+    - **Output:** **Info=|NumberOfFiles=<x>|
   - 003
-    **Required param:** -
-    **Optional param:** STATUS, JOBNAME
-    **Output:** Info=|JobName=<x>|JobUser=<x>|JobNumber=<x>|Status=<x>|Type=<x>|SubType=<x>|ActiveJobStatus=<x>|SubsystemName=<x>|
+    - **Required param:** -
+    - **Optional param:** STATUS, JOBNAME
+    - **Output:** Info=|JobName=<x>|JobUser=<x>|JobNumber=<x>|Status=<x>|Type=<x>|SubType=<x>|ActiveJobStatus=<x>|SubsystemName=<x>|
   - 004
-    **Required param:** SQL
-    **Optional param:** -
-    **Output:** Info=|Value=<x>|
+    - **Required param:** SQL
+    - **Optional param:** -
+    - **Output:** Info=|Value=<x>|
   - 005
-    **Required param:** -
-    **Optional param:** SBSNAME
-    **Output:** Info=|SubsystemName=<x>|SubsystemLibraryName=<x>|Status=<x>|ActiveJobs=<x>|
+    - **Required param:** -
+    - **Optional param:** SBSNAME
+    - **Output:** Info=|SubsystemName=<x>|SubsystemLibraryName=<x>|Status=<x>|ActiveJobs=<x>|
   - 006
-    **Required param:** MSGQNAME, MINUTES
-    **Optional param:** MSGID
-    **Output:** Info=|MessageId=<x>|Date=<x>|Time=<x>|Severity=<x>|Type=<x>|
+    - **Required param:** MSGQNAME, MINUTES
+    - **Optional param:** MSGID
+    - **Output:** Info=|MessageId=<x>|Date=<x>|Time=<x>|Severity=<x>|Type=<x>|
 
 ## Example services
 

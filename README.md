@@ -70,7 +70,7 @@
   - 002
     - **Required param:** OUTQNAME
     - **Optional param:** OUTQLIB
-    - **Output:** **Info=|NumberOfFiles=&lt;x&gt;|
+    - **Output:** Info=|NumberOfFiles=&lt;x&gt;|
   - 003
     - **Required param:** -
     - **Optional param:** STATUS, JOBNAME

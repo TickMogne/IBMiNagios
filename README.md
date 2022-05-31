@@ -9,6 +9,7 @@
   - API access only with valid authorisation key
   - Read only
   - As SQL statement only SELECT is allowed
+- The Nagios check command is the script *ibminagios.sh*, this script calls the IBMi Web Service (IBMi program *ibminagios*) with authorisation key, command and command parameters.
 
 ## Configuration
 

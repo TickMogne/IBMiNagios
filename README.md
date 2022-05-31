@@ -89,7 +89,7 @@ Usage:
 
 - Usage
   ```
-  https://<host>:<port>/ibminagios?authkey=<authkey>&cmd=<cmd>
+  https://<host>:<port>/ibminagios?authkey=<auth_key>&cmd=<command>
   ```
 - Commands
   - 001

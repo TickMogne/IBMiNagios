@@ -11,36 +11,37 @@ PROGPATH=$(echo "$0" | sed -e 's,[\\/][^\\/][^\\/]*$,,')
 
 CONFIGFILE=/etc/ibminagios.conf
 
-HOST=$1
-
-if [ "$HOST" = "" ]; then
-  echo "Usage:"
-  echo "  ibminagios.sh <host> <command>"
-  echo "    command: [ syssts aspused <warning_condition> <critical_condition> ] |"
-  echo "             [ job [ msgw <warning_condition> <critical_condition> <exception_of_job_names> ] |"
-  echo "             [ act <warning_condition> <critical_condition> <job_name> ] ] |"
-  echo "             [ outq splfcount <warning_condition> <critical_condition> <outq_name> ] |"
-  echo "             [ sql - <warning_condition> <critical_condition> <sql_statement> ] |"
-  echo "             [ sbs [ act <warning_condition> <critical_condition> <sbs_name> ] |"
-  echo "                   [ jobcount <warning_condition> <critical_condition> <sbs_name> ] ] |"
-  echo "             [ msgq [ inq <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] |"
-  echo "                    [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] ]"
-  echo "    warning_condition and critical_condition:"
-  echo "      format: [ <condition><value> | - ]"
-  echo "        -  : no condition processing"
-  echo "      conditions:"
-  echo "        lt : less than" 
-  echo "        le : less equal" 
-  echo "        eq : equal" 
-  echo "        ne : not equal" 
-  echo "        ge : greater equal"
-  echo "        gt : greater than"
-  echo "      special value: <NULL>"
-  echo "    exception_of_job_names: Job names separated with comma"
-  echo "    exception_of_msgid: Job names separated with comma"
+if [ "$1" = "" ]; then
+  cat <<EOF
+Usage:
+  ibminagios.sh <host> <command>
+    command: [ syssts aspused <warning_condition> <critical_condition> ] |
+             [ job [ msgw <warning_condition> <critical_condition> <exception_of_job_names> ] |
+             [ act <warning_condition> <critical_condition> <job_name> ] ] |
+             [ outq splfcount <warning_condition> <critical_condition> <outq_name> ] |
+             [ sql - <warning_condition> <critical_condition> <sql_statement> ] |
+             [ sbs [ act <warning_condition> <critical_condition> <sbs_name> ] |
+                   [ jobcount <warning_condition> <critical_condition> <sbs_name> ] ] |
+             [ msgq [ inq <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] |
+                    [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] ]
+    warning_condition and critical_condition:
+      format: [ <condition><value> | - ]
+        -  : no condition processing
+      conditions:
+        lt : less than 
+        le : less equal 
+        eq : equal
+        ne : not equal 
+        ge : greater equal
+        gt : greater than
+      special value: <NULL>
+    exception_of_job_names: Job names separated with comma
+    exception_of_msgid: Job names separated with comma
+EOF
   exit 0
 fi
 
+HOST=$1
 CMD=$2
 TEMPFILE=`mktemp`
 TEMPFILELOG=`mktemp`

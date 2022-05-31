@@ -34,13 +34,14 @@
       <host>:AUTHKEY=halala
       <host>:HTTPPORT=81
       ```
-  - *<nagios path>*/libexec/checkcommands.conf
+  - *<nagios path>*/etc/checkcommands.conf
     ```
     define command {
       command_name ibminagios
       command_line $USER1$/ibminagios.sh $HOSTADDRESS$ "$ARG1$" "$ARG2$" "$ARG3$" "$ARG4$" "$ARG5$" "$ARG6$" "$ARG7$" "$ARG8$" "$ARG9$"
     }
-    ```      
+    ```
+  - *<nagios path>*/libexec/ibminagios.sh
 - IBMi Web Service
   - apache.conf
     ```

@@ -31,8 +31,8 @@
       ```
     - content:
       ```
-      &lt;host&gt;:AUTHKEY=halala
-      &lt;host&gt:HTTPPORT=81
+      <host>:AUTHKEY=halala
+      <host>:HTTPPORT=81
       ```
   - *&lt;nagios path&gt;*/etc/checkcommands.conf
     ```
@@ -46,14 +46,14 @@
   - apache.conf
     ```
     ScriptAlias /ibminagios /QSYS.LIB/IBMINAGIOS.LIB/IBMINAGIOS.PGM
-    &lt;Directory /QSYS.LIB/IBMINAGIOS.LIB/&gt;
+    <Directory /QSYS.LIB/IBMINAGIOS.LIB/>
       Order Deny,Allow
       Allow From 10.43.85.172
       Deny From all
       SetHandler cgi-script
       Options +ExecCGI
       SetEnv IBMI_NAGIOS_CONF_FILE /etc/ibminagios.conf
-    &lt;/Directory&gt;
+    </Directory>
     ```
 
 ## API definition

@@ -60,7 +60,7 @@
 
 - Usage
   ```
-  https://&lt;host&gt;:&lt;port&gt;/ibminagios?authkey=&lt;authkey&gt;&cmd=&lt;cmd&gt;
+  https://<host>:<port>/ibminagios?authkey=<authkey>&cmd=<cmd>
   ```
 - Commands
   - 001

@@ -9,13 +9,13 @@
   - API access only with valid authorisation key
   - Read only
   - As SQL statement only SELECT is allowed
-- The Nagios check command is the script *ibminagios.sh*, this script calls the IBMi Web Service (IBMi program *ibminagios*) with authorisation key, command and command parameters.
+- The Nagios check command is the script *ibminagios.sh*, this script calls the IBMi Web Service (IBMi program *ibminagios*) with authorisation key, command and command parameters and processes the output of the API.
 
 ## Configuration
 
 - IBMi objects
   - /etc/ibminagios.conf
-    - rights:
+    - rights (only the user *QTMHHTP1* should able to read and write the file):
       ```
       -rw------- QTMHHTP1  0
       ```
@@ -23,10 +23,12 @@
       ```
       AUTHKEY=halala
       ```
+      - Authorisation key to use the API.
   - IBMNAGIOS/IBMNAGIOS *PGM
 - Nagios objects
+  - the tool *wget* must be installed
   - /etc/ibminagios.conf
-    - rights:
+    - rights (only the user *nagios* should able to read and write the file):
       ```
       -rw------- nagios nobody
       ```
@@ -35,6 +37,7 @@
       <host>:AUTHKEY=halala
       <host>:HTTPPORT=81
       ```
+      - Authorisation key and API port fpr each monitored hosts.
   - *&lt;nagios path&gt;*/etc/checkcommands.conf
     ```
     define command {
@@ -44,7 +47,7 @@
     ```
   - *&lt;nagios path&gt;*/libexec/ibminagios.sh
 - IBMi Web Service
-  - apache.conf
+  - httpd.conf
     ```
     ScriptAlias /ibminagios /QSYS.LIB/IBMINAGIOS.LIB/IBMINAGIOS.PGM
     <Directory /QSYS.LIB/IBMINAGIOS.LIB/>
@@ -56,6 +59,8 @@
       SetEnv IBMI_NAGIOS_CONF_FILE /etc/ibminagios.conf
     </Directory>
     ```
+    - you should change the IP address to the address of the nagios (only nagios will be able use this API).
+    - you may use the SetEnv IBMI_NAGIOS_CONF_FILE to define the path of the ibminagios.conf file on the IBMi. The default path is /etc/ibminagios.conf.
 
 ## ibminagios.sh
 
@@ -121,22 +126,42 @@ Usage:
 ## Example services
 
 - System ASP used
+  Warning from 75%, critical from 90%.
   ```
   check_command ibminagios!syssts!aspused!ge75!ge90
   ```
 - Number of spool files in output queue QEZDEBUG
+  Warning if there is at least 1 spool file in the queue, no critical check.
   ```
   check_command ibminagios!outq!splfcount!ge1!-!QEZDEBUG
   ```
 - Number of jobs with active status MSGW (with two exceptions)
+  Warning if there is at least 1 job has active status MSGW, nor critical check. The job names USVJOB and RH_STRZX60 are exceptions (they have always active status MSGW).
   ```
   check_command ibminagios!job!msgw!ge1!-!USVJOB,RH_STRZX60
   ```
 - Number of active jobs with name USVJOB
+  No warning check, critical if the number of of jobs is 0 (the job is not active).
   ```
   check_command ibminagios!job!act!-!eq0!USVJOB
   ```
 - Number of not active iCluster nodes
+  Warning if the number of not active nodes greater equal 1, no critical check. 
   ```
   check_command ibminagios!sql!-!ge1!-!SELECT count(*) AS satz FROM icluster.dmnodes WHERE status <> '*ACTIVE'
+  ```
+- Number of jobs in the subsystem ZEITSBSD
+  Warning if the number of jobs is less than 7, no critical check.
+  ```
+  ibminagios!sbs!jobcount!lt7!-!ZEITSBSD
+  ```
+- Status of the OMK subsystem
+  No warning check, critical if the status of the subsystem is not *ACTIVE
+  ```
+  ibminagios!sbs!act!-!ne*ACTIVE!OMK
+  ```
+- Number of messages in the message QSECOFR in the last 15 minutes
+  Warning if the number of messages in the last 15 minutes is greater than 0, no critical check.
+  ```
+  ibminagios!msgq!search!gt0!-!QSECOFR!*ALL!15
   ```

@@ -153,15 +153,15 @@ Usage:
 - Number of jobs in the subsystem ZEITSBSD
   Warning if the number of jobs is less than 7, no critical check.
   ```
-  ibminagios!sbs!jobcount!lt7!-!ZEITSBSD
+  check_command ibminagios!sbs!jobcount!lt7!-!ZEITSBSD
   ```
 - Status of the OMK subsystem
   No warning check, critical if the status of the subsystem is not *ACTIVE
   ```
-  ibminagios!sbs!act!-!ne*ACTIVE!OMK
+  check_command ibminagios!sbs!act!-!ne*ACTIVE!OMK
   ```
 - Number of messages in the message QSECOFR in the last 15 minutes
   Warning if the number of messages in the last 15 minutes is greater than 0, no critical check.
   ```
-  ibminagios!msgq!search!gt0!-!QSECOFR!*ALL!15
+  check_command ibminagios!msgq!search!gt0!-!QSECOFR!*ALL!15
   ```

@@ -9,6 +9,7 @@
   - API access only with valid authorisation key
   - Read only
   - As SQL statement only SELECT is allowed
+  - IFS access is allowed only for objects to which the user QTMHHTP1 has rights
 - The Nagios check command is the script *ibminagios.sh*, this script calls the IBMi Web Service (IBMi program *ibminagios*) with authorisation key, command and command parameters and processes the output of the API.
 
 ## Configuration
@@ -65,30 +66,46 @@
 ## ibminagios.sh
 
 ```
-Usage:
-  ibminagios.sh <host> <command>
-    command: [ syssts aspused <warning_condition> <critical_condition> ] |
-             [ job [ msgw <warning_condition> <critical_condition> <exception_of_job_names> ] |
-             [ act <warning_condition> <critical_condition> <job_name> ] ] |
-             [ outq splfcount <warning_condition> <critical_condition> <outq_name> ] |
-             [ sql - <warning_condition> <critical_condition> <sql_statement> ] |
-             [ sbs [ act <warning_condition> <critical_condition> <sbs_name> ] |
-                   [ jobcount <warning_condition> <critical_condition> <sbs_name> ] ] |
-             [ msgq [ inq <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] |
-                    [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] ]
-    warning_condition and critical_condition:
-      format: [ <condition><value> | - ]
-        -  : no condition processing
-      conditions:
-        lt : less than 
-        le : less equal 
-        eq : equal
-        ne : not equal 
-        ge : greater equal
-        gt : greater than
-      special value: <NULL>
-    exception_of_job_names: Job names separated with comma
-    exception_of_msgid: Job names separated with comma
+ibminagios.sh <host> <command>
+  command: [ syssts aspused <warning_condition> <critical_condition> ] |
+           [ job [ msgw <warning_condition> <critical_condition> <exception_of_job_names> ] |
+                 [ act <warning_condition> <critical_condition> <job_name> ] ] |
+           [ outq splfcount <warning_condition> <critical_condition> <outq_name> ] |
+           [ sql - <warning_condition> <critical_condition> <sql_statement> ] |
+           [ sbs [ act <warning_condition> <critical_condition> <sbs_name> ] |
+                 [ jobcount <warning_condition> <critical_condition> <sbs_name> ] ] |
+           [ msgq [ inq <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] |
+                  [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] ] |
+           [ ifs [ filecount <warning_condition> <critical_condition> <dir_name> ] |
+                 [ dircount <warning_condition> <critical_condition> <dir_name> ] |
+                 [ filesize <warning_condition> <critical_condition> <dir_name> <file_name> ] |
+                 [ oldestfile <warning_condition> <critical_condition> <dir_name> ] ]
+  warning_condition and critical_condition:
+    format: [ <condition><value> | - ]
+      -  : no condition processing
+    conditions:
+      lt : less than 
+      le : less equal 
+      eq : equal
+      ne : not equal 
+      ge : greater equal
+      gt : greater than
+    values (per command and subcommand):
+      syssts aspused : percent of usage
+      job msgw       : number of jobs
+      job act        : number of jobs
+      outq splfcount : number of spool files
+      sql            : return value of the sql statement
+      sbs act        : status of the subsystem
+      sbs jobcount   : number of jobs
+      msgq inq       : number of messages
+      msgq search    : number of messages
+      ifs filecount  : number of files
+      ifs dircount   : number of directories
+      ifs filesize   : size of the file in bytes
+      ifs oldestfile : age of the file in seconds
+    special value: <NULL>
+  exception_of_job_names: Job names separated with comma
 ```
 
 ## ibminagios
@@ -122,6 +139,10 @@ Usage:
     - **Required param:** MSGQNAME, MINUTES
     - **Optional param:** MSGID
     - **Output:** Info=|MessageId=&lt;x&gt;|Date=&lt;x&gt;|Time=&lt;x&gt;|Severity=&lt;x&gt;|Type=&lt;x&gt;|
+  - 007
+    - **Required param:** DIR
+    - **Optional param:** FILE
+    - **Output:** Info=|Name=&lt;x&gt;|Type=&lt;x&gt;|Size=&lt;x&gt;|ChangedDateTime=&lt;x&gt;|ModifiedDateTime=&lt;x&gt;|AccessedDateTime=&lt;x&gt;|CodePage=&lt;x&gt;|
 
 ## Example services
 
@@ -164,4 +185,19 @@ Usage:
   Warning if the number of messages in the last 15 minutes is greater than 0, no critical check.
   ```
   check_command ibminagios!msgq!search!gt0!-!QSECOFR!*ALL!15
+  ```
+- Number of files in the IFS directory /home/transfer
+  Warning if the number of files is greater than 100, no critical check.
+  ```
+  check_command ibminagios!ifs!filecount!gt100!-!/home/transfer
+  ```
+- Oldest file in the IFS directory /home/transfer
+  Warning of the age of the oldest file is greater than 32000000 (aproximately 1 year), no critical check.
+  ```
+  check_command ibminagios!ifs!oldestfile!gt32000000!-!/home/transfer/archive
+  ```
+- Size of the IFS file /tmp/sendmail.log
+  Warning if the size of the file is greater than 4000000 (aproximately 4 MB), no critical check.
+  ```
+  check_command ibminagios!ifs!filesize!gt4000000!-!/tmp!sendmail.log
   ```

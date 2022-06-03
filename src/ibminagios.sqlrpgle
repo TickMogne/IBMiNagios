@@ -53,6 +53,8 @@ Dcl-Proc Nagios;
         Cmd005();
       When (Cmd = '006'); // List of messages
         Cmd006();
+      When (Cmd = '007'); // IFS directory entries
+        Cmd007();
       Other;
         HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
         HttpResponse('Info=Bad command' + CHAR_CR + CHAR_LF);
@@ -561,6 +563,107 @@ Dcl-Proc Cmd006;
       // Close the list
       qgyclst(ListInformation.Handle: Error);
     EndIf; 
+  EndIf;
+
+End-Proc;
+
+Dcl-Proc Cmd007;
+  Dcl-S ParamDirectory Char(256);
+  Dcl-S ParamFile Char(256);
+  Dcl-S Dir Pointer;
+  Dcl-S Dirent_Ptr Pointer;
+  Dcl-Ds Dirent LikeDs(Dirent_Ds) Based(Dirent_Ptr);
+  Dcl-Ds StatBuffer LikeDs(Stat_Ds);
+  Dcl-S FileName Char(256);
+  Dcl-S Type Char(4);
+  Dcl-S Tm_Ptr Pointer;
+  Dcl-Ds Tm LikeDs(Tm_Ds) Based(Tm_Ptr);
+  Dcl-S ChangedDateTime Char(15);
+  Dcl-S ModifiedDateTime Char(15);
+  Dcl-S AccessedDateTime Char(15);
+  Dcl-S rv Int(10);
+  Dcl-S i Int(10);
+
+  ParamDirectory = HttpRequestValue(RequestData: 'DIR');
+  If (ParamDirectory = *Blanks);
+    HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+    HttpResponse('Info=Missing parameter DIR' + CHAR_CR + CHAR_LF);
+    Return;
+  EndIf;
+
+  ParamFile = HttpRequestValue(RequestData: 'FILE');
+
+  If (ParamFile <> *Blanks);
+    FileName = %Trim(ParamDirectory) + '/' + %Trim(ParamFile) + x'00';
+    rv = stat(FileName: %Addr(StatBuffer));
+    If (rv < 0);
+      HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+      HttpResponse('Info=Opening file' + CHAR_CR + CHAR_LF);
+    Else;
+      HttpResponse('Result=OK' + CHAR_CR + CHAR_LF);
+      If (%Subst(StatBuffer.ObjectType: 1: 5) = '*STMF');
+        Type = 'FILE';
+      Else;
+        Type = 'DIR';
+      EndIf;
+      Tm_Ptr = localtime(%Addr(StatBuffer.ChangedTime));
+      rv = strftime(%Addr(ChangedDateTime): 15: '%Y%m%d%H%M%S': Tm_Ptr);
+      Tm_Ptr = localtime(%Addr(StatBuffer.ModifiedTime));
+      rv = strftime(%Addr(ModifiedDateTime): 15: '%Y%m%d%H%M%S': Tm_Ptr);
+      Tm_Ptr = localtime(%Addr(StatBuffer.AccessedTime));
+      rv = strftime(%Addr(AccessedDateTime): 15: '%Y%m%d%H%M%S': Tm_Ptr);
+      HttpResponse('Info=' +
+        '|Name=' + %Trim(ParamFile) +
+        '|Type=' + %Trim(Type) +
+        '|Size=' + %Char(StatBuffer.Size) +
+        '|ChangedDateTime=' + %Subst(ChangedDateTime: 1: 14) +
+        '|ModifiedDateTime=' + %Subst(ModifiedDateTime: 1: 14) +
+        '|AccessedDateTime=' + %Subst(AccessedDateTime: 1: 14) +
+        '|CodePage=' + %Char(StatBuffer.CodePage) +
+        '|' + CHAR_CR + CHAR_LF);
+    EndIf;
+  Else;
+    Dir = opendir(%Trim(ParamDirectory) + x'00');
+    If (Dir = *Null);
+      HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+      HttpResponse('Info=Opening directory' + CHAR_CR + CHAR_LF);
+    Else;
+      HttpResponse('Result=OK' + CHAR_CR + CHAR_LF);
+      Dirent_Ptr = readdir(Dir);
+      DoW (Dirent_Ptr <> *Null);
+        If (%Subst(Dirent.Name: 1: 1) <> '.');
+          For i=1 To 256;
+            If (%Subst(Dirent.Name: i: 1) = x'00');
+              %Subst(Dirent.Name: i: 1) = ' ';
+            EndIf;
+          EndFor;
+          FileName = %Trim(ParamDirectory) + '/' + %Trim(Dirent.Name) + x'00';
+          rv = stat(FileName: %Addr(StatBuffer));
+          If (%Subst(StatBuffer.ObjectType: 1: 5) = '*STMF');
+            Type = 'FILE';
+          Else;
+            Type = 'DIR';
+          EndIf;
+          Tm_Ptr = localtime(%Addr(StatBuffer.ChangedTime));
+          rv = strftime(%Addr(ChangedDateTime): 15: '%Y%m%d%H%M%S': Tm_Ptr);
+          Tm_Ptr = localtime(%Addr(StatBuffer.ModifiedTime));
+          rv = strftime(%Addr(ModifiedDateTime): 15: '%Y%m%d%H%M%S': Tm_Ptr);
+          Tm_Ptr = localtime(%Addr(StatBuffer.AccessedTime));
+          rv = strftime(%Addr(AccessedDateTime): 15: '%Y%m%d%H%M%S': Tm_Ptr);
+          HttpResponse('Info=' +
+            '|Name=' + %Trim(Dirent.Name) +
+            '|Type=' + %Trim(Type) +
+            '|Size=' + %Char(StatBuffer.Size) +
+            '|ChangedDateTime=' + %Subst(ChangedDateTime: 1: 14) +
+            '|ModifiedDateTime=' + %Subst(ModifiedDateTime: 1: 14) +
+            '|AccessedDateTime=' + %Subst(AccessedDateTime: 1: 14) +
+            '|CodePage=' + %Trim(%Char(StatBuffer.CodePage)) +
+            '|' + CHAR_CR + CHAR_LF);
+        EndIf;
+        Dirent_Ptr = readdir(Dir);
+      EndDo;
+      rv = closedir(Dir);
+    EndIf;
   EndIf;
 
 End-Proc;

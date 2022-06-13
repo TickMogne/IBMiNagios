@@ -75,7 +75,7 @@ ibminagios.sh <host> <command>
            [ sbs [ act <warning_condition> <critical_condition> <sbs_name> ] |
                  [ jobcount <warning_condition> <critical_condition> <sbs_name> ] ] |
            [ msgq [ inq <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] |
-                  [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] ] |
+                  [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> [ <exception_of_message_ids> ] ] ] |
            [ ifs [ filecount <warning_condition> <critical_condition> <dir_name> ] |
                  [ dircount <warning_condition> <critical_condition> <dir_name> ] |
                  [ filesize <warning_condition> <critical_condition> <dir_name> <file_name> ] |
@@ -106,6 +106,7 @@ ibminagios.sh <host> <command>
       ifs oldestfile : age of the file in seconds
     special value: <NULL>
   exception_of_job_names: Job names separated with comma
+  exception_of_message_ids: Message ids separated with comma  
 ```
 
 ## ibminagios

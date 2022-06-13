@@ -26,7 +26,7 @@ ibminagios.sh <host> <command>
            [ sbs [ act <warning_condition> <critical_condition> <sbs_name> ] |
                  [ jobcount <warning_condition> <critical_condition> <sbs_name> ] ] |
            [ msgq [ inq <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] |
-                  [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> ] ] |
+                  [ search <warning_condition> <critical_condition> <msgq_name> <msgid | *ALL> <minutes> [ <exception_of_message_ids> ] ] ] |
            [ ifs [ filecount <warning_condition> <critical_condition> <dir_name> ] |
                  [ dircount <warning_condition> <critical_condition> <dir_name> ] |
                  [ filesize <warning_condition> <critical_condition> <dir_name> <file_name> ] |
@@ -57,6 +57,7 @@ ibminagios.sh <host> <command>
       ifs oldestfile : age of the file in seconds
     special value: <NULL>
   exception_of_job_names: Job names separated with comma
+  exception_of_message_ids: Message ids separated with comma
 EOF
 }
 
@@ -266,7 +267,7 @@ check_api_result() {
 # Return value:
 #  Returns 1 if the text in the list of exceptions, otherwise return 0.
 #
-check_exceptions() {
+check_exception() {
   local EXCEPTIONS
   local INARRAY
 
@@ -274,9 +275,9 @@ check_exceptions() {
 
   INARRAY=$(echo " ${EXCEPTIONS[@]} " | grep -o " $2 " | wc -w)
   if [ $INARRAY -eq 0 ]; then
-    echo 0
+    return 0
   else
-    echo 1
+    return 1
   fi
 }
 
@@ -517,10 +518,26 @@ case $CMD in
         if [ $? -eq 0 ]; then
           STATE=$STATE_UNKNOWN
         else
-          INFO=`grep '^Info=|' $TEMPFILE | wc -l`
-          check_conditions $4 $5 $INFO
+          C=0
+          while read LINE
+          do
+            INFO=`echo $LINE | grep '^Info=|'`
+            if [ "$INFO" != "" ]; then
+              MESSAGEID=`echo $INFO | sed -e 's/^Info=.*|MessageId=\(.*\)|Date=.*$/\1/'`
+              check_exception $9 $MESSAGEID
+              if [ $? -eq 0 ]; then
+                let C=C+1
+              fi
+            fi
+          done < $TEMPFILE
+          check_conditions $4 $5 $C
           STATE=$?
-          echo "$INFO"
+          echo -n $C
+          if [ "$9" != "" ]; then
+            echo ", exceptions: $9"
+          else
+            echo ""
+          fi
         fi
         ;;
 

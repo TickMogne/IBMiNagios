@@ -408,7 +408,7 @@ End-Proc;
 
 Dcl-Proc Cmd006;
   Dcl-Ds Error LikeDs(ERRC0100);
-  Dcl-S ParamMsgQName Char(10);
+  Dcl-S ParamMsgQName Char(21);
   Dcl-S ParamMsgId Char(7);
   Dcl-S ParamMinutes Char(10);
   Dcl-Ds Receiver Len(8000) End-Ds;
@@ -468,6 +468,8 @@ Dcl-Proc Cmd006;
   Dcl-S j Int(10);
   Dcl-S From Char(20);
   Dcl-Ds MsgQUsed Len(44) End-Ds;
+  Dcl-S MsgQName Char(10);
+  Dcl-S MsgQLib Char(10);
 
   ParamMsgQName = HttpRequestValue(RequestData: 'MSGQNAME');
   If (ParamMsgQName = *Blanks);
@@ -488,9 +490,18 @@ Dcl-Proc Cmd006;
     ParamMsgId = '*ALL';
   EndIf;
 
+  i = %Scan('/': ParamMsgQName);
+  If (i = 0);
+    MsgQLib = '*LIBL';
+    MsgQName = ParamMsgQName;
+  Else;
+    MsgQLib = %Subst(ParamMsgQName: 1: i-1);
+    MsgQName = %Subst(ParamMsgQName: i+1);
+  EndIf;
+
   From = %Char(%Timestamp() - %Minutes(%Int(ParamMinutes)): *iso0);
 
-  If (ParamMsgQName = 'QHST');
+  If (MsgQName = 'QHST');
     SelectionInformation1.StartDate = '1' + %Subst(From: 3: 6);
     SelectionInformation1.StartTime = %Subst(From: 9: 6);
     // Open the list
@@ -529,7 +540,7 @@ Dcl-Proc Cmd006;
       qgyclst(ListInformation.Handle: Error);
     EndIf;
   Else;
-    qgyolmsg(Receiver: %Size(Receiver): ListInformation: -1: '0': SelectionInformation2: %Size(SelectionInformation2): '1' + ParamMsgQName + '*LIBL': MsgQUsed: Error);
+    qgyolmsg(Receiver: %Size(Receiver): ListInformation: -1: '0': SelectionInformation2: %Size(SelectionInformation2): '1' + MsgQName + MsgQLib: MsgQUsed: Error);
     If (Error.BytesAvailable > 0); // Check error
       HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
       HttpResponse('Info=Api error ' + Error.ExceptionId + CHAR_CR + CHAR_LF);

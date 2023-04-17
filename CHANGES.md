@@ -1,5 +1,12 @@
 # Changes
 
+## 2023.04.16
+
+- new API command 008 (journal receivers)
+- new shell command and subcommands
+  - jrnrcv partialcount
+  - jrnrcv oldestdetached
+
 ## 2022.06.24
 
 - changing the parameter *msgq_name* for the command *msgq*

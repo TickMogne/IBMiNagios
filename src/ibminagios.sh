@@ -31,6 +31,8 @@ ibminagios.sh <host> <command>
                  [ dircount <warning_condition> <critical_condition> <dir_name> ] |
                  [ filesize <warning_condition> <critical_condition> <dir_name> <file_name> ] |
                  [ oldestfile <warning_condition> <critical_condition> <dir_name> ] ]
+           [ jrnrcv [ partialcount <warning_condition> <critical_condition> ] |
+                    [ oldestdetached <warning_condition> <critical_condition> [ <journal> ] ] ]
   warning_condition and critical_condition:
     format: [ <condition><value> | - ]
       -  : no condition processing
@@ -42,19 +44,21 @@ ibminagios.sh <host> <command>
       ge : greater equal
       gt : greater than
     values (per command and subcommand):
-      syssts aspused : percent of usage
-      job msgw       : number of jobs
-      job act        : number of jobs
-      outq splfcount : number of spool files
-      sql            : return value of the sql statement
-      sbs act        : status of the subsystem
-      sbs jobcount   : number of jobs
-      msgq inq       : number of messages
-      msgq search    : number of messages
-      ifs filecount  : number of files
-      ifs dircount   : number of directories
-      ifs filesize   : size of the file in bytes
-      ifs oldestfile : age of the file in seconds
+      syssts aspused        : percent of usage
+      job msgw              : number of jobs
+      job act               : number of jobs
+      outq splfcount        : number of spool files
+      sql                   : return value of the sql statement
+      sbs act               : status of the subsystem
+      sbs jobcount          : number of jobs
+      msgq inq              : number of messages
+      msgq search           : number of messages
+      ifs filecount         : number of files
+      ifs dircount          : number of directories
+      ifs filesize          : size of the file in bytes
+      ifs oldestfile        : age of the file in seconds
+      jrnrcv partialcount   : number of journal receivers
+      jrnrcv oldestdetached : age of the journal receiver (datached date and time) in seconds
     special value: <NULL>
   exception_of_job_names: Job names separated with comma
   exception_of_message_ids: Message ids separated with comma
@@ -477,6 +481,7 @@ case $CMD in
           INFO=`grep 'Info' $TEMPFILE | sed -e 's/^Info=.*|CurrentlyActiveJobs=\([0-9]*\).*$/\1/'`
           if [ "$INFO" = "" ]; then
             STATE=$STATE_UNKNOWN
+            echo "No Information"
           else
             check_conditions $4 $5 $INFO
             STATE=$?
@@ -635,6 +640,97 @@ case $CMD in
           else
             echo "-"
           fi 
+        fi
+        ;;
+
+      *)
+        STATE=$STATE_UNKNOWN
+        echo "Unknown subcommand $SUBCMD"
+        ;;
+
+    esac
+    ;;
+
+  jrnrcv)
+    URL="$URL&cmd=008"
+    SUBCMD=$3
+
+    case $SUBCMD in
+
+      partialcount)
+        wget -O $TEMPFILE -o $TEMPFILELOG "$URL"
+        check_api_result
+        if [ $? -eq 0 ]; then
+          STATE=$STATE_UNKNOWN
+        else
+          INFO=`grep '^Info=.*|Status=5|.*$' $TEMPFILE | wc -l`
+          check_conditions $4 $5 $INFO
+          STATE=$?
+          if [ $INFO -gt 0 ]; then
+            INFO2=`grep '^Info=.*|Status=5|.*$' $TEMPFILE | sed -e 's/^.*|JrnRcvName=\(.*\)|JrnRcvLibrary.*$/\1/'`
+            INFO="$INFO, $INFO2"
+          fi
+          echo "$INFO"
+        fi
+        ;;
+
+      oldestdetached)
+        wget -O $TEMPFILE -o $TEMPFILELOG "$URL"
+        check_api_result
+        if [ $? -eq 0 ]; then
+          STATE=$STATE_UNKNOWN
+        else
+          if [ -z "$6" ]; then
+            JRNLIBRARY=""
+            JRNNAME=""
+          else
+            if [ `echo $6 | grep -l '/' | wc -l` -eq 0 ]; then
+              JRNLIBRARY=""
+              JRNNAME=$6
+            else
+              JRNLIBRARY=`echo "$6" | sed -e 's/^\(.*\)[/].*$/\1/'`
+              JRNNAME=`echo "$6" | sed -e 's/^.*[/]\(.*\)$/\1/'`
+            fi
+          fi
+          AGE=0
+          DATETIME=0
+          FILE=""
+          LIBRARY=""
+          while read LINE
+          do
+            if [ -z "$JRNLIBRARY" ] && [ -z "$JRNNAME" ]; then
+              INFO=`echo $LINE | grep '^Info=|.*|Status=[234]|.*'`
+            elif [ -z "$JRNLIBRARY" ] && [ -n "$JRNNAME" ]; then
+              C="^Info=|.*|JrnName=$JRNNAME|.*|Status=[234]|.*"
+              INFO=`echo $LINE | grep "$C"`
+            else
+              C="^Info=|.*|JrnName=$JRNNAME|JrnLibrary=$JRNLIBRARY|Status=[234]|.*"
+              INFO=`echo $LINE | grep "$C"`
+            fi
+            if [ "$INFO" != "" ]; then
+              MODIFIEDDATETIME=`echo $INFO | sed -e 's/^Info=.*|DetachedDateTime=\([0-9]*\).*$/\1/'`
+              YYYYMMDD=${MODIFIEDDATETIME:0:8}
+              HH=${MODIFIEDDATETIME:8:2}
+              MM=${MODIFIEDDATETIME:10:2}
+              SS=${MODIFIEDDATETIME:12:2}
+              let T=($(date +%s)-$(date +%s -d $YYYYMMDD)-$HH*3600-$MM*60-$SS)
+              if [ $T -gt $AGE ]; then
+                AGE=$T
+                let DATETIME=$(date +%s -d $YYYYMMDD)+$HH*3600+$MM*60+$SS
+                FILE=`echo $INFO | sed -e 's/^Info=.*|JrnRcvName=\(.*\)|JrnRcvLibrary=.*$/\1/'`
+                LIBRARY=`echo $INFO | sed -e 's/^Info=.*|JrnRcvLibrary=\(.*\)|JrnName=.*$/\1/'`
+              fi
+            fi
+          done < $TEMPFILE
+          if [ $AGE -gt 0 ]; then
+            INFO=$AGE
+            check_conditions $4 $5 $INFO
+            STATE=$?
+            INFO=`date --date=@$DATETIME +"%Y.%m.%d %H:%M:%S"`
+            echo "$INFO $LIBRARY/$FILE"
+          else
+            echo "-"
+          fi
         fi
         ;;
 

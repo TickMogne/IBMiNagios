@@ -6,7 +6,8 @@
 // Created by: github.com/TickMogne, 2022.05.31
 //
 // Compile parameters:
-//  INCDIR('xxx/TMLib/src/') where xxx the parent library of the repository TMLib (github.com/TickMogne/TMLib)
+//  INCDIR('xxx/TMLib/src/') where xxx the parent library of the repository TMLib
+//  (github.com/TickMogne/TMLib)
 //
 
 Ctl-Opt DftActGrp(*No) Main(Nagios) BndDir('TMLIB_M');
@@ -55,6 +56,8 @@ Dcl-Proc Nagios;
         Cmd006();
       When (Cmd = '007'); // IFS directory entries
         Cmd007();
+      When (Cmd = '008'); // List of journal receivers
+        Cmd008();
       Other;
         HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
         HttpResponse('Info=Bad command' + CHAR_CR + CHAR_LF);
@@ -300,7 +303,7 @@ Dcl-Proc Cmd004;
     Return;
   EndIf;
 
-  If (Upper(%Subst(PAramSql: 1: 7)) <> 'SELECT ');
+  If (Upper(%Subst(ParamSql: 1: 7)) <> 'SELECT ');
     HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
     HttpResponse('Info=Only SELECT is allowed' + CHAR_CR + CHAR_LF);
     Return;
@@ -678,3 +681,94 @@ Dcl-Proc Cmd007;
   EndIf;
 
 End-Proc;
+
+Dcl-Proc Cmd008;
+  Dcl-Ds Error LikeDs(ERRC0100);  
+  Dcl-S UserSpaceName Char(20) Inz('MSGFILES  QTEMP');
+  Dcl-S UserSpaceDataPointer Pointer;
+  Dcl-Ds UserSpaceHeader LikeDs(UserSpaceHeader_Ds) Based(UserSpaceDataPointer);
+  Dcl-S UserSpaceEntryPointer Pointer;
+  Dcl-Ds OBJL0100 Based(UserSpaceEntryPointer) Qualified;
+    QName Char(20) Pos(1);
+  End-Ds;
+  Dcl-Ds RRCV0100 Len(512) Qualified;
+    JrnRcvName Char(10) Pos(9);
+    JrnRcvLibrary Char(10) Pos(19);
+    JrnName Char(10) Pos(29);
+    JrnLibrary Char(10) Pos(39);
+    Status Char(1) Pos(89);
+    DetachedDateTime Char(13) Pos(109);
+    PendingTransactions Char(1) Pos(185);
+  End-Ds;
+  Dcl-S i Int(10);
+  Dcl-S Info Char(256);
+
+  // Create user space
+  CreateUserSpace(UserSpaceName: Error);
+  If (Error.BytesAvailable > 0); // Check error
+    HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+    HttpResponse('Info=Api error' + CHAR_CR + CHAR_LF);
+    Return;
+  EndIf;
+
+  // List objects (type *MSGF)
+  quslobj(UserSpaceName: 'OBJL0100': '*ALL      *ALL': '*JRNRCV': Error);
+  If (Error.BytesAvailable > 0); // Check error
+    HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+    HttpResponse('Info=Api error' + CHAR_CR + CHAR_LF);
+    DeleteUserSpace(UserSpaceName);
+    Return;
+  EndIf;
+
+  // Retrieve the user space pointer
+  qusptrus(UserSpaceName: UserSpaceDataPointer: Error);
+  If (Error.BytesAvailable > 0); // Check error
+    HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+    HttpResponse('Info=Api error' + CHAR_CR + CHAR_LF);
+    DeleteUserSpace(UserSpaceName);
+    Return;
+  EndIf;
+
+  i = 0;
+  // Init the entry pointer
+  UserSpaceEntryPointer = UserSpaceDataPointer + UserSpaceHeader.OffsetListData;
+  HttpResponse('Result=OK' + CHAR_CR + CHAR_LF);
+  Dow (i < UserSpaceHeader.NumberOfEntries);
+    QjoRtvJrnReceiverInformation(RRCV0100: %Size(RRCV0100): OBJL0100.QName: 'RRCV0100': Error);
+    If ((Error.BytesAvailable > 0) And (Error.ExceptionId <> 'CPF9802')); // Check error
+      HttpResponse('Result=NOK' + CHAR_CR + CHAR_LF);
+      HttpResponse('Info=Api error (' + Error.ExceptionId + ')' + CHAR_CR + CHAR_LF);
+      DeleteUserSpace(UserSpaceName);
+      Return;
+    EndIf;
+    If (Error.BytesAvailable = 0); // Check error
+      Info = 'Info=' +
+        '|JrnRcvName=' + %Trim(RRCV0100.JrnRcvName) +
+        '|JrnRcvLibrary=' + %Trim(RRCV0100.JrnRcvLibrary) +
+        '|JrnName=' + %Trim(RRCV0100.JrnName) +
+        '|JrnLibrary=' + %Trim(RRCV0100.JrnLibrary) +
+        '|Status=' + %Trim(RRCV0100.Status) +
+        '|DetachedDateTime=';
+      Select;
+        When (%Subst(RRCV0100.DetachedDateTime: 1: 7) = '0000000');
+          Info = %Trim(Info) + '00';
+        When (%Subst(RRCV0100.DetachedDateTime: 1: 1) = '0');
+          Info = %Trim(Info) + '19';
+        When (%Subst(RRCV0100.DetachedDateTime: 1: 1) = '1');
+          Info = %Trim(Info) + '20';
+      EndSl;
+      Info = %Trim(Info) + %Subst(RRCV0100.DetachedDateTime: 2: 12);
+      Info = %Trim(Info) + '|PendingTransactions=' + %Trim(RRCV0100.PendingTransactions) +
+        '|' + CHAR_CR + CHAR_LF;
+      HttpResponse(%Trim(Info));
+    EndIf;
+    // Shift the entry pointer
+    UserSpaceEntryPointer += UserSpaceHeader.SizeOfEntry;
+    i += 1;
+  EndDo;
+
+  // Delete user space
+  DeleteUserSpace(UserSpaceName);
+
+End-Proc;
+

@@ -651,7 +651,8 @@ Dcl-Proc Cmd007;
               %Subst(Dirent.Name: i: 1) = ' ';
             EndIf;
           EndFor;
-          FileName = %Trim(ParamDirectory) + '/' + %Trim(Dirent.Name) + x'00';
+          FileName = %Trim(ParamDirectory) + '/' + %Subst(Dirent.Name: 1: Dirent.NameLength) +
+            x'00';
           rv = stat(FileName: %Addr(StatBuffer));
           If (%Subst(StatBuffer.ObjectType: 1: 5) = '*STMF');
             Type = 'FILE';

@@ -1,5 +1,11 @@
 # Changes
 
+## 2023.10.04
+
+- bugfix ifs file name
+- new shell subcommand
+  - ifs emptyfilecount
+
 ## 2023.04.16
 
 - new API command 008 (journal receivers)

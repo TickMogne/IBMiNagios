@@ -30,7 +30,8 @@ ibminagios.sh <host> <command>
            [ ifs [ filecount <warning_condition> <critical_condition> <dir_name> ] |
                  [ dircount <warning_condition> <critical_condition> <dir_name> ] |
                  [ filesize <warning_condition> <critical_condition> <dir_name> <file_name> ] |
-                 [ oldestfile <warning_condition> <critical_condition> <dir_name> ] ]
+                 [ oldestfile <warning_condition> <critical_condition> <dir_name> ] |
+                 [ emptyfilecount <warning_condition> <critical_condition> <dir_name> ] ]
            [ jrnrcv [ partialcount <warning_condition> <critical_condition> ] |
                     [ oldestdetached <warning_condition> <critical_condition> [ <journal> ] ] ]
   warning_condition and critical_condition:
@@ -620,9 +621,9 @@ case $CMD in
             if [ "$INFO" != "" ]; then
               MODIFIEDDATETIME=`echo $INFO | sed -e 's/^Info=.*|ModifiedDateTime=\([0-9]*\).*$/\1/'`
               YYYYMMDD=${MODIFIEDDATETIME:0:8}
-              HH=${MODIFIEDDATETIME:8:2}
-              MM=${MODIFIEDDATETIME:10:2}
-              SS=${MODIFIEDDATETIME:12:2}
+              HH=10#${MODIFIEDDATETIME:8:2}
+              MM=10#${MODIFIEDDATETIME:10:2}
+              SS=10#${MODIFIEDDATETIME:12:2}
               let T=($(date +%s)-$(date +%s -d $YYYYMMDD)-$HH*3600-$MM*60-$SS)
               if [ $T -gt $AGE ]; then
                 AGE=$T
@@ -642,6 +643,32 @@ case $CMD in
           fi 
         fi
         ;;
+
+      emptyfilecount)
+        URL="$URL&file=$7"
+        wget -O $TEMPFILE -o $TEMPFILELOG "$URL"
+        check_api_result
+        if [ $? -eq 0 ]; then
+          STATE=$STATE_UNKNOWN
+        else
+          CNT=0
+          while read LINE
+          do
+            INFO=`echo $LINE | grep '^Info=|.*|Type=FILE|.*'`
+            if [ "$INFO" != "" ]; then
+              SIZE=`echo $INFO | sed -e 's/^Info=.*|Size=\([0-9]*\).*$/\1/'`
+              if [ $SIZE -eq 0 ]; then
+                let CNT=$CNT+1
+              fi
+            fi
+          done < $TEMPFILE
+          INFO=$CNT
+          check_conditions $4 $5 $CNT
+          STATE=$?
+          echo $CNT
+        fi
+        ;;
+
 
       *)
         STATE=$STATE_UNKNOWN
